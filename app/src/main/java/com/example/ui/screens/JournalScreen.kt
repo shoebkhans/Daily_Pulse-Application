@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -59,6 +60,7 @@ fun JournalScreen(
     val journalEntries by viewModel.allJournalEntries.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var entryToEdit by remember { mutableStateOf<JournalEntryEntity?>(null) }
+    var entryToDelete by remember { mutableStateOf<JournalEntryEntity?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -208,7 +210,7 @@ fun JournalScreen(
                                         )
                                     }
                                     IconButton(
-                                        onClick = { viewModel.deleteJournal(entry.id) },
+                                        onClick = { entryToDelete = entry },
                                         modifier = Modifier.size(32.dp)
                                     ) {
                                         Icon(
@@ -277,6 +279,40 @@ fun JournalScreen(
                 }
                 showAddDialog = false
                 entryToEdit = null
+            }
+        )
+    }
+
+    if (entryToDelete != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { entryToDelete = null },
+            title = {
+                Text(
+                    text = "Delete Reflection?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete \"${entryToDelete?.title}\"? This reflection cannot be recovered.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        entryToDelete?.let { viewModel.deleteJournal(it.id) }
+                        entryToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { entryToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }

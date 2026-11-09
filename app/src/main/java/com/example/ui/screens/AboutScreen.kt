@@ -420,6 +420,76 @@ fun AboutScreen(
                             }
                         }
 
+                        // GitHub Profile Card with one-tap link and copy button
+                        val githubUrl = "https://github.com/shoebkhans"
+                        val githubHandle = "shoebkhans"
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubUrl))
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("GitHub Profile", githubUrl)
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, "GitHub link copied!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                .testTag("about_github_btn")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Code,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Column {
+                                        Text(
+                                            text = "GitHub Profile",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = githubHandle,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+
+                                IconButton(
+                                    onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("GitHub Profile", githubUrl)
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, "GitHub link copied!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = "Copy GitHub link",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+
                         Text(
                             text = "Developed with care for healthy minds and calm days. Feedback, bug reports, or ideas? We'd love to hear from you.",
                             style = MaterialTheme.typography.bodySmall,

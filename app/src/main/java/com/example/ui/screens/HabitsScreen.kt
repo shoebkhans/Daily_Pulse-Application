@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -73,6 +74,7 @@ fun HabitsScreen(
     var selectedFilter by remember { mutableStateOf("All") }
     var showAddDialog by remember { mutableStateOf(false) }
     var habitToEdit by remember { mutableStateOf<HabitEntity?>(null) }
+    var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
     val todayCompletions = remember(habitCompletions, todayDate) {
         habitCompletions.filter { it.date == todayDate }
@@ -324,7 +326,7 @@ fun HabitsScreen(
                         totalCompletions = totalCompletions,
                         onToggle = { viewModel.toggleHabitCompletion(habit.id, todayDate) },
                         onEdit = { habitToEdit = habit },
-                        onDelete = { viewModel.deleteHabit(habit) }
+                        onDelete = { habitToDelete = habit }
                     )
                 }
             }
@@ -356,6 +358,40 @@ fun HabitsScreen(
                 }
                 showAddDialog = false
                 habitToEdit = null
+            }
+        )
+    }
+
+    if (habitToDelete != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { habitToDelete = null },
+            title = {
+                Text(
+                    text = "Delete Habit?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete \"${habitToDelete?.title}\"? All past completion records for this habit will be removed.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        habitToDelete?.let { viewModel.deleteHabit(it) }
+                        habitToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { habitToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }

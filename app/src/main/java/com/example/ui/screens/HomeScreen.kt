@@ -24,9 +24,12 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Spa
-import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.WbTwilight
+import com.example.ui.components.SmallSunArcAnimation
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -103,11 +106,14 @@ fun HomeScreen(
 
     var showAddTaskDialog by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<TaskEntity?>(null) }
+    var taskToDelete by remember { mutableStateOf<TaskEntity?>(null) }
 
     var showAddHabitDialog by remember { mutableStateOf(false) }
     var habitToEdit by remember { mutableStateOf<HabitEntity?>(null) }
+    var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
     var quickTaskTitle by remember { mutableStateOf("") }
+    var showCelestialCycleDialog by remember { mutableStateOf(false) }
 
     val isToday = selectedDate == todayDate
 
@@ -237,24 +243,62 @@ fun HomeScreen(
                     )
                 }
 
-                // Top right squircle badge with pulse icon and weather pill
+                // Top right: Sunrise, Sun, Sunset, and Moon Celestial Widget according to day & night
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
+                    val isDaytime = timeInfo.isDay
+                    val stage = timeInfo.cycleStage
+                    val celestialIcon = when {
+                        !isDaytime -> Icons.Default.Nightlight
+                        stage.contains("Sunrise") -> Icons.Default.WbTwilight
+                        stage.contains("Sunset") -> Icons.Default.WbTwilight
+                        else -> Icons.Default.WbSunny
+                    }
+                    val celestialColor = when {
+                        !isDaytime -> Color(0xFF5C6BC0) // Moon indigo
+                        stage.contains("Sunrise") -> Color(0xFFE65100) // Sunrise amber
+                        stage.contains("Sunset") -> Color(0xFFD84315) // Sunset terracotta
+                        else -> Color(0xFFF57F17) // Golden Sun
+                    }
+                    val containerBg = when {
+                        !isDaytime -> Color(0xFFE8EAF6).copy(alpha = 0.6f)
+                        stage.contains("Sunrise") -> Color(0xFFFFE0B2).copy(alpha = 0.5f)
+                        stage.contains("Sunset") -> Color(0xFFFFCCBC).copy(alpha = 0.5f)
+                        else -> Color(0xFFFFF9C4).copy(alpha = 0.6f)
+                    }
+
+                    // Interactive Sun / Sunrise / Sunset / Moon badge
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                        color = containerBg,
+                        border = BorderStroke(1.dp, celestialColor.copy(alpha = 0.35f)),
                         modifier = Modifier
-                            .size(44.dp)
-                            .testTag("home_top_pulse_badge")
+                            .clickable { showCelestialCycleDialog = true }
+                            .testTag("home_top_celestial_badge")
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.Timeline,
-                                contentDescription = "DailyPulse",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
+                                imageVector = celestialIcon,
+                                contentDescription = "Sun / Moon cycle",
+                                tint = celestialColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = when {
+                                    !isDaytime -> "Moon"
+                                    stage.contains("Sunrise") -> "Sunrise"
+                                    stage.contains("Sunset") -> "Sunset"
+                                    else -> "Sun"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = celestialColor
                             )
                         }
                     }
@@ -575,7 +619,7 @@ fun HomeScreen(
                     task = task,
                     onToggleComplete = { viewModel.toggleTask(task) },
                     onEdit = { taskToEdit = task },
-                    onDelete = { viewModel.deleteTask(task) }
+                    onDelete = { taskToDelete = task }
                 )
             }
         }
@@ -677,7 +721,7 @@ fun HomeScreen(
                         habitToEdit = habit
                     },
                     onDelete = {
-                        viewModel.deleteHabit(habit)
+                        habitToDelete = habit
                     }
                 )
             }
@@ -732,6 +776,41 @@ fun HomeScreen(
         )
     }
 
+    // Task Delete Confirmation Dialog
+    if (taskToDelete != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { taskToDelete = null },
+            title = {
+                Text(
+                    text = "Delete Task?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to remove \"${taskToDelete?.title}\"? This action cannot be undone.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        taskToDelete?.let { viewModel.deleteTask(it) }
+                        taskToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { taskToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Add / Edit Habit Dialog
     if (showAddHabitDialog || habitToEdit != null) {
         AddEditHabitDialog(
@@ -754,6 +833,88 @@ fun HomeScreen(
                 }
                 showAddHabitDialog = false
                 habitToEdit = null
+            }
+        )
+    }
+
+    // Habit Delete Confirmation Dialog
+    if (habitToDelete != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { habitToDelete = null },
+            title = {
+                Text(
+                    text = "Delete Habit?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete \"${habitToDelete?.title}\"? Your recorded history for this habit will also be removed.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        habitToDelete?.let { viewModel.deleteHabit(it) }
+                        habitToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { habitToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Celestial Day / Night Cycle Dialog (Sunrise -> Midday -> Sunset -> Moon)
+    if (showCelestialCycleDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showCelestialCycleDialog = false },
+            title = {
+                Text(
+                    text = if (timeInfo.isDay) "Solar Cycle: Sunrise to Sunset" else "Lunar Cycle: Starlight & Moon",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SmallSunArcAnimation(
+                        isDay = timeInfo.isDay,
+                        progress = timeInfo.progress,
+                        stageLabel = timeInfo.cycleStage
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = "${timeInfo.greeting} • ${timeInfo.mealTitle}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = timeInfo.mealSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCelestialCycleDialog = false }) {
+                    Text("Close", fontWeight = FontWeight.Bold)
+                }
             }
         )
     }
