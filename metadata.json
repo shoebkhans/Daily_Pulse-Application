@@ -1,0 +1,6 @@
+{
+  "name": "DailyPulse",
+  "description": "A peaceful personal daily planner and habit tracker with offline storage, tasks, habits, mood check-ins, day score, learning cards, and reflections.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
