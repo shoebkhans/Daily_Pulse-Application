@@ -12,6 +12,8 @@ import com.example.data.model.LearningCardStateEntity
 import com.example.data.model.MoodEntryEntity
 import com.example.data.model.TaskEntity
 import com.example.data.repository.DailyPulseRepository
+import com.example.data.weather.WeatherInfo
+import com.example.data.weather.WeatherService
 import com.example.receiver.DailyPulseReminderReceiver
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -37,9 +39,20 @@ class DailyPulseViewModel(application: Application) : AndroidViewModel(applicati
     private val _selectedDate = MutableStateFlow(getTodayIsoDate())
     val selectedDate: StateFlow<String> = _selectedDate.asStateFlow()
 
+    private val _weather = MutableStateFlow(WeatherService.getCachedWeather())
+    val weather: StateFlow<WeatherInfo> = _weather.asStateFlow()
+
     init {
         val database = DailyPulseDatabase.getDatabase(application)
         repository = DailyPulseRepository(database.dailyPulseDao(), application)
+        refreshWeather()
+    }
+
+    fun refreshWeather() {
+        viewModelScope.launch {
+            val result = WeatherService.fetchCurrentWeather(getApplication())
+            _weather.value = result
+        }
     }
 
     val themePreference: StateFlow<String> = repository.themePreference

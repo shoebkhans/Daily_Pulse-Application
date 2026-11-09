@@ -14,8 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -32,15 +33,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import com.example.ui.screens.AboutScreen
+import com.example.ui.screens.HabitsScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.JournalScreen
 import com.example.ui.screens.ProgressScreen
 import com.example.ui.screens.SettingsScreen
 
 enum class DailyPulseTab(val title: String, val icon: ImageVector, val tag: String) {
-    HOME("Home", Icons.Default.Home, "tab_home"),
-    PROGRESS("Progress", Icons.Default.BarChart, "tab_progress"),
-    JOURNAL("Journal", Icons.Default.AutoStories, "tab_journal"),
+    TODAY("Today", Icons.Default.WbSunny, "tab_today"),
+    HABITS("Habits", Icons.Default.Spa, "tab_habits"),
+    REFLECT("Reflect", Icons.Default.AutoStories, "tab_reflect"),
+    INSIGHTS("Insights", Icons.Default.BarChart, "tab_insights"),
     SETTINGS("Settings", Icons.Default.Settings, "tab_settings")
 }
 
@@ -49,7 +52,7 @@ fun MainScreen(
     viewModel: DailyPulseViewModel,
     modifier: Modifier = Modifier
 ) {
-    var currentTab by remember { mutableStateOf(DailyPulseTab.HOME) }
+    var currentTab by remember { mutableStateOf(DailyPulseTab.TODAY) }
     var isAboutScreenOpen by remember { mutableStateOf(false) }
 
     // Back handling
@@ -57,9 +60,9 @@ fun MainScreen(
         BackHandler {
             isAboutScreenOpen = false
         }
-    } else if (currentTab != DailyPulseTab.HOME) {
+    } else if (currentTab != DailyPulseTab.TODAY) {
         BackHandler {
-            currentTab = DailyPulseTab.HOME
+            currentTab = DailyPulseTab.TODAY
         }
     }
 
@@ -106,34 +109,41 @@ fun MainScreen(
             AnimatedContent(
                 targetState = currentTab,
                 transitionSpec = {
-                    (fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
-                     scaleIn(initialScale = 0.96f, animationSpec = tween(220, easing = FastOutSlowInEasing)))
+                    (fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) +
+                     scaleIn(initialScale = 0.97f, animationSpec = tween(200, easing = FastOutSlowInEasing)))
                     .togetherWith(
-                        fadeOut(animationSpec = tween(160, easing = FastOutSlowInEasing)) +
-                        scaleOut(targetScale = 1.02f, animationSpec = tween(160, easing = FastOutSlowInEasing))
+                        fadeOut(animationSpec = tween(140, easing = FastOutSlowInEasing)) +
+                        scaleOut(targetScale = 1.02f, animationSpec = tween(140, easing = FastOutSlowInEasing))
                     )
                 },
                 label = "screen_3d_transition"
             ) { targetScreen ->
                 when (targetScreen) {
-                    DailyPulseTab.HOME -> {
+                    DailyPulseTab.TODAY -> {
                         HomeScreen(
+                            viewModel = viewModel,
+                            onNavigateToHabits = { currentTab = DailyPulseTab.HABITS },
+                            modifier = screenModifier
+                        )
+                    }
+                    DailyPulseTab.HABITS -> {
+                        HabitsScreen(
                             viewModel = viewModel,
                             modifier = screenModifier
                         )
                     }
-                    DailyPulseTab.PROGRESS -> {
+                    DailyPulseTab.REFLECT -> {
+                        JournalScreen(
+                            viewModel = viewModel,
+                            modifier = screenModifier
+                        )
+                    }
+                    DailyPulseTab.INSIGHTS -> {
                         ProgressScreen(
                             viewModel = viewModel,
                             onNavigateToHomeForDate = {
-                                currentTab = DailyPulseTab.HOME
+                                currentTab = DailyPulseTab.TODAY
                             },
-                            modifier = screenModifier
-                        )
-                    }
-                    DailyPulseTab.JOURNAL -> {
-                        JournalScreen(
-                            viewModel = viewModel,
                             modifier = screenModifier
                         )
                     }

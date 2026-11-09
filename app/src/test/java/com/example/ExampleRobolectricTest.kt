@@ -21,7 +21,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [36])
 class ExampleRobolectricTest {
 
     private lateinit var db: DailyPulseDatabase
@@ -88,5 +88,24 @@ class ExampleRobolectricTest {
         assertNotNull(card)
         assertTrue(card.title.isNotBlank())
         assertTrue(card.practicalTip.isNotBlank())
+    }
+
+    @Test
+    fun `main navigation has exactly 5 tabs`() {
+        val tabs = com.example.ui.DailyPulseTab.values()
+        assertEquals(5, tabs.size)
+        assertEquals("Today", tabs[0].title)
+        assertEquals("Habits", tabs[1].title)
+        assertEquals("Reflect", tabs[2].title)
+        assertEquals("Insights", tabs[3].title)
+        assertEquals("Settings", tabs[4].title)
+    }
+
+    @Test
+    fun `weather fallback provides valid temperature and status`() {
+        val weather = com.example.data.weather.WeatherService.getCachedWeather()
+        assertNotNull(weather)
+        assertTrue(weather.temperatureC in -50..60)
+        assertTrue(weather.emoji.isNotBlank())
     }
 }

@@ -14,16 +14,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -101,6 +102,44 @@ fun ProgressScreen(
         allMoods.map { it.date }.toSet()
     }
 
+    // Weekly Summarize: Calculate metrics for past 7 days
+    val weeklyDays = remember(todayDate, allTasks, allCompletions) {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val dayNameSdf = SimpleDateFormat("EEE", Locale.US)
+        val cal = Calendar.getInstance()
+        try {
+            cal.time = sdf.parse(todayDate) ?: Date()
+        } catch (_: Exception) {}
+
+        val list = mutableListOf<DaySummary>()
+        // 7 days ending today
+        for (i in 6 downTo 0) {
+            val dCal = cal.clone() as Calendar
+            dCal.add(Calendar.DAY_OF_YEAR, -i)
+            val iso = sdf.format(dCal.time)
+            val dayLabel = dayNameSdf.format(dCal.time).take(1) // e.g. M, T, W
+            val fullDayName = dayNameSdf.format(dCal.time)
+
+            val tasksDone = allTasks.count { it.date == iso && it.isCompleted }
+            val habitsDone = allCompletions.count { it.date == iso }
+            val totalDone = tasksDone + habitsDone
+
+            list.add(
+                DaySummary(
+                    dateIso = iso,
+                    dayLetter = dayLabel,
+                    dayName = fullDayName,
+                    completedCount = totalDone
+                )
+            )
+        }
+        list
+    }
+
+    val weeklyTotalActions = weeklyDays.sumOf { it.completedCount }
+    val maxDayCount = weeklyDays.maxOfOrNull { it.completedCount }?.coerceAtLeast(1) ?: 1
+    val bestDay = weeklyDays.maxByOrNull { it.completedCount }
+
     // Selected date details
     val tasksOnSelectedDate = remember(allTasks, selectedDate) {
         allTasks.filter { it.date == selectedDate }
@@ -117,11 +156,18 @@ fun ProgressScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Progress & Flow",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column {
+                        Text(
+                            text = "Insights & Records",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Weekly summary & monthly flow",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -132,16 +178,150 @@ fun ProgressScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .testTag("progress_screen_lazy_column"),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Calendar Card
+            // Weekly Summarize Card
             item {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .smooth3DTilt(maxRotationDegrees = 2f)
+                        .smooth3DTilt(maxRotationDegrees = 0.8f)
+                        .testTag("weekly_summary_card"),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "WEEKLY SUMMARY",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.1.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "$weeklyTotalActions actions completed this week",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalFireDepartment,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        // 7-day Bar Graph
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            weeklyDays.forEach { day ->
+                                val heightFraction = (day.completedCount.toFloat() / maxDayCount.toFloat()).coerceIn(0.12f, 1f)
+                                val isToday = day.dateIso == todayDate
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Bottom,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { viewModel.setSelectedDate(day.dateIso) }
+                                ) {
+                                    if (day.completedCount > 0) {
+                                        Text(
+                                            text = day.completedCount.toString(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                    }
+
+                                    // Bar pill
+                                    Box(
+                                        modifier = Modifier
+                                            .width(22.dp)
+                                            .height((70 * heightFraction).dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(
+                                                if (isToday) MaterialTheme.colorScheme.primary
+                                                else if (day.completedCount > 0) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                                else MaterialTheme.colorScheme.surfaceVariant
+                                            )
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Text(
+                                        text = day.dayLetter,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        if (bestDay != null && bestDay.completedCount > 0) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Most active day: ${bestDay.dayName} (${bestDay.completedCount} steps)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Monthly Records System & Calendar
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .smooth3DTilt(maxRotationDegrees = 0.8f)
                         .testTag("progress_calendar_card"),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -158,12 +338,21 @@ fun ProgressScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = monthYearTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Column {
+                                Text(
+                                    text = "MONTHLY RECORDS",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.1.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = monthYearTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                             Row {
                                 IconButton(
                                     onClick = { calendarMonthOffset-- },
@@ -231,7 +420,6 @@ fun ProgressScreen(
 
                                         val hasTasksDone = datesWithCompletedTasks.contains(dayIso)
                                         val hasHabitsDone = datesWithCompletedHabits.contains(dayIso)
-                                        val hasMood = datesWithMood.contains(dayIso)
                                         val hasActivity = hasTasksDone || hasHabitsDone
 
                                         Surface(
@@ -244,7 +432,7 @@ fun ProgressScreen(
                                             color = when {
                                                 isSelected -> MaterialTheme.colorScheme.primary
                                                 isCurrentDay -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                                else -> androidx.compose.ui.graphics.Color.Transparent
+                                                else -> Color.Transparent
                                             },
                                             border = if (isCurrentDay && !isSelected) {
                                                 BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
@@ -286,13 +474,13 @@ fun ProgressScreen(
                 }
             }
 
-            // Selected Date Summary Card
+            // Selected Date Breakdown Card
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                     )
                 ) {
                     Column(
@@ -324,7 +512,7 @@ fun ProgressScreen(
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.testTag("progress_view_day_btn")
                             ) {
-                                Text("View on Home")
+                                Text("View on Today")
                             }
                         }
 
@@ -368,7 +556,7 @@ fun ProgressScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text(
-                                        text = "${completionsOnSelectedDate.size} checked",
+                                        text = "${completionsOnSelectedDate.size} wins",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -409,7 +597,7 @@ fun ProgressScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 val totalDoneTasks = allTasks.count { it.isCompleted }
                 val totalHabitChecks = allCompletions.size
@@ -446,6 +634,13 @@ fun ProgressScreen(
         }
     }
 }
+
+data class DaySummary(
+    val dateIso: String,
+    val dayLetter: String,
+    val dayName: String,
+    val completedCount: Int
+)
 
 @Composable
 fun MilestoneCard(
