@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.learning.DailyLearningContent
 import com.example.data.model.HabitEntity
 import com.example.data.model.TaskEntity
+import com.example.data.quotes.MoodQuoteRepository
 import com.example.ui.DailyPulseViewModel
 import com.example.ui.components.AddEditHabitDialog
 import com.example.ui.components.AddEditTaskDialog
@@ -129,7 +130,13 @@ fun HomeScreen(
         }
     }
 
-    val dailyQuote = motivationalMessages[(dayOfYear % motivationalMessages.size + motivationalMessages.size) % motivationalMessages.size]
+    val moodQuote = remember(currentMood, selectedDate, dayOfYear) {
+        MoodQuoteRepository.getDailyMoodQuote(
+            mood = currentMood?.mood,
+            dayOfYear = dayOfYear,
+            dateIso = selectedDate
+        )
+    }
     val todayLearningCard = DailyLearningContent.getTodayCard(dayOfYear)
     val cardState = learningStates.find { it.cardId == todayLearningCard.id }
 
@@ -448,24 +455,70 @@ fun HomeScreen(
             }
         }
 
-        // Daily Motivation Quote Line
+        // Daily Motivational & Emotional Quote Line (Tailored to today's mood with 1,000+ quotes)
         item {
             Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("home_daily_quote_card")
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(text = "🌱", fontSize = 16.sp)
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(text = moodQuote.emoji, fontSize = 16.sp)
+                            Text(
+                                text = moodQuote.source.uppercase(Locale.US),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        if (currentMood != null) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                            ) {
+                                Text(
+                                    text = "tuned to ${currentMood?.mood?.lowercase()}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
                     Text(
-                        text = "“$dailyQuote”",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "“${moodQuote.quote}”",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            lineHeight = 22.sp
+                        ),
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = moodQuote.prompt,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                     )
                 }
             }

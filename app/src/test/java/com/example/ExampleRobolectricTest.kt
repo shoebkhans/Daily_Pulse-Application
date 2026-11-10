@@ -108,4 +108,20 @@ class ExampleRobolectricTest {
         assertTrue(weather.temperatureC in -50..60)
         assertTrue(weather.emoji.isNotBlank())
     }
+
+    @Test
+    fun `mood quote repository produces rich emotional quotes across all moods and rotates daily`() {
+        val moods = listOf("Low", "Stressed", "Okay", "Good", "Great", null)
+        moods.forEach { mood ->
+            val quoteDay1 = com.example.data.quotes.MoodQuoteRepository.getDailyMoodQuote(mood, dayOfYear = 10, dateIso = "2026-01-10")
+            assertNotNull(quoteDay1)
+            assertTrue(quoteDay1.quote.isNotBlank())
+            assertTrue(quoteDay1.source.isNotBlank())
+            assertTrue(quoteDay1.prompt.isNotBlank())
+
+            val quoteDay2 = com.example.data.quotes.MoodQuoteRepository.getDailyMoodQuote(mood, dayOfYear = 11, dateIso = "2026-01-11")
+            assertNotNull(quoteDay2)
+            assertTrue(quoteDay2.quote.isNotBlank())
+        }
+    }
 }

@@ -310,7 +310,24 @@ fun SettingsScreen(
                                 checked = reminderEnabled,
                                 onCheckedChange = { viewModel.toggleReminder(it, context) },
                                 modifier = Modifier.testTag("settings_reminder_switch"),
-                                colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
+                                thumbContent = {
+                                    if (reminderEnabled) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize),
+                                            tint = Color(0xFF1B5E36)
+                                        )
+                                    }
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF2E7D52), // Elegant emerald/sage green
+                                    checkedBorderColor = Color(0xFF2E7D52),
+                                    uncheckedThumbColor = Color(0xFF757575), // Clearly visible neutral grey thumb
+                                    uncheckedTrackColor = Color(0xFFE0E0E0), // Neutral grey track
+                                    uncheckedBorderColor = Color(0xFFBDBDBD)
+                                )
                             )
                         }
 
