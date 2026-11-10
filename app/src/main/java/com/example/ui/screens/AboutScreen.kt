@@ -270,7 +270,7 @@ fun AboutScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text(
-                                        text = "shoeb khan (Racksun)",
+                                        text = "Shoeb Khan (Racksun)",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
